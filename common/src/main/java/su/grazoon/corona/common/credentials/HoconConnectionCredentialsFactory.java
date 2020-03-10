@@ -20,6 +20,6 @@ public class HoconConnectionCredentialsFactory implements ConnectionCredentialsF
         String hostname = config.getString("corona.hostname", "localhost");
         int port = config.getInt("corona.port", 5555);
         String server = config.getString("corona.server");
-        return new ConnectionCredentials(hostname, port, server);
+        return new CoronaConnectionCredentials(hostname, port, server);
     }
 }
