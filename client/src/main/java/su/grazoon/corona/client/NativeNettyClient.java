@@ -16,9 +16,12 @@ import su.grazoon.corona.api.PayloadPacketHandler;
 import su.grazoon.corona.api.credentials.ConnectionCredentials;
 import su.grazoon.corona.common.CoronaPacketHandler;
 import su.grazoon.corona.common.PayloadPacketHandlerImpl;
+import su.grazoon.corona.common.packet.ClientConnectionPacket;
 
 import java.io.IOException;
 import java.net.ConnectException;
+
+import static su.grazoon.corona.common.packet.ClientConnectionPacket.Type.UNKNOWN;
 
 public class NativeNettyClient implements NettyClient {
 
@@ -57,6 +60,7 @@ public class NativeNettyClient implements NettyClient {
         try {
             channelFuture.sync();
             log.info("Connected to Corona ({})", credentials.getFormattedAddress());
+            sendPacket(new ClientConnectionPacket(UNKNOWN));
         } catch (InterruptedException e) {
             throw new RuntimeException("Thread was interrupted.");
         }

@@ -16,6 +16,7 @@ import su.grazoon.corona.api.credentials.ConnectionCredentials;
 import su.grazoon.corona.common.CoronaPacketHandler;
 import su.grazoon.corona.common.PayloadPacketHandlerImpl;
 import su.grazoon.corona.common.packet.AlertPacket;
+import su.grazoon.corona.common.packet.ClientConnectionPacket;
 
 public class NativeNettyServer implements NettyServer {
 
@@ -49,6 +50,7 @@ public class NativeNettyServer implements NettyServer {
                      }
                  });
 
+        packetHandler.registerHandler(ClientConnectionPacket.class, packet -> log.info("Connected {} client", packet.getType()));
         packetHandler.registerHandler(AlertPacket.class, alertPacket -> log.info(String.valueOf(alertPacket.a)));
     }
 
@@ -75,6 +77,8 @@ public class NativeNettyServer implements NettyServer {
 
     @Override
     public void shutdown() {
+        log.info("Corona is going to sleep...");
+        log.info("Closing IO threads");
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
     }

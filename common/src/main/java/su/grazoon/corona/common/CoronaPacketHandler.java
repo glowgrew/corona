@@ -27,11 +27,6 @@ public class CoronaPacketHandler extends SimpleChannelInboundHandler<PayloadPack
     }
 
     @Override
-    public void channelRegistered(ChannelHandlerContext ctx) {
-        log.debug("Registered new channel {}", ctx.channel().id().asShortText());
-    }
-
-    @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();
     }
