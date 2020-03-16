@@ -9,11 +9,17 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface ConnectionCredentials {
 
+    @NotNull
     String getFormattedAddress();
 
-    @NotNull String getHostname();
+    @NotNull
+    String getHostname();
 
     int getPort();
 
-    @NotNull String getServer();
+    @NotNull
+    String getServer();
+
+    @NotNull
+    SenderType getSenderType();
 }
