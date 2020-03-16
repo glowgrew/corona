@@ -12,7 +12,6 @@ import su.grazoon.corona.api.config.CoronaConfig;
 import su.grazoon.corona.api.credentials.ConnectionCredentialsFactory;
 import su.grazoon.corona.common.config.DefaultCoronaConfig;
 import su.grazoon.corona.common.credentials.HoconConnectionCredentialsFactory;
-import su.grazoon.corona.common.packet.ClientConnectionPacket;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -29,13 +28,16 @@ public class Bootstrap {
         CoronaConfig config = new DefaultCoronaConfig(Paths.get("data"), "config.conf", true);
         ConnectionCredentialsFactory credentialsFactory = new HoconConnectionCredentialsFactory(config);
         server.bind(credentialsFactory.create());
+
+        log.info("Welcome to Corona console! Write 'shutdown' to stop Corona");
+        log.info("and to close all active connections.");
         Terminal terminal = TerminalBuilder.builder().dumb(true).jna(false).build();
         LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();
         try {
             String line;
             while ((line = lineReader.readLine("> ")) != null) {
                 try {
-                    if (line.equals("stop")) {
+                    if (line.equals("shutdown")) {
                         server.shutdown();
                         return;
                     }
@@ -44,7 +46,7 @@ public class Bootstrap {
                     e.printStackTrace();
                 }
             }
-        } catch (UserInterruptException e2) {
+        } catch (UserInterruptException e) {
             server.shutdown();
         }
     }
