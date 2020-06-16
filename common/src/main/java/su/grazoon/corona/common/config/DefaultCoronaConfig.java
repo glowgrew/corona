@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * @author glowgrew
  */
@@ -26,7 +24,7 @@ public class DefaultCoronaConfig implements CoronaConfig {
     private final Path path;
     private Config handle;
 
-    public DefaultCoronaConfig(Path dataFolder, String fileName, boolean isResource) {
+    public DefaultCoronaConfig(Path dataFolder, String fileName) {
         boolean notExistsDataFolder = Files.notExists(dataFolder);
         if (notExistsDataFolder) {
             try {
@@ -37,18 +35,10 @@ public class DefaultCoronaConfig implements CoronaConfig {
         }
         path = dataFolder.resolve(fileName);
         if (notExistsDataFolder || Files.notExists(dataFolder)) {
-            if (isResource) {
-                try {
-                    Files.copy(getClass().getResourceAsStream("/config.conf"), path);
-                } catch (IOException e) {
-                    log.warn("Exception due to copy resource", e);
-                }
-            } else {
-                try {
-                    Files.createFile(dataFolder);
-                } catch (IOException e) {
-                    log.warn("Exception due to create file", e);
-                }
+            try {
+                Files.copy(getClass().getResourceAsStream("/config.conf"), path);
+            } catch (IOException e) {
+                log.warn("Exception due to copy resource", e);
             }
         }
         loadFile();

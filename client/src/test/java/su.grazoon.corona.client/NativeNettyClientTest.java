@@ -3,25 +3,30 @@ package su.grazoon.corona.client;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import su.grazoon.corona.api.credentials.ConnectionCredentials;
+import su.grazoon.corona.api.credentials.ConnectionCredentialsFactory;
 import su.grazoon.corona.common.config.DefaultCoronaConfig;
-import su.grazoon.corona.common.credentials.HoconConnectionCredentialsFactory;
+import su.grazoon.corona.common.credentials.ConfigConnectionCredentialsFactory;
 import su.grazoon.corona.common.packet.AlertPacket;
 import su.grazoon.corona.server.NativeNettyServer;
 
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static su.grazoon.corona.api.credentials.SenderType.CORONA;
+import static su.grazoon.corona.api.credentials.SenderType.PAPER;
 
 public class NativeNettyClientTest {
 
-    private static ConnectionCredentials credentials;
+    private static ConnectionCredentials paperCredentials, coronaCredentials;
 
     @BeforeAll
     static void beforeAll() {
-        credentials = new HoconConnectionCredentialsFactory(
-                new DefaultCoronaConfig(Paths.get("src/test/resources"), "test-config.conf", false)).create();
+        ConnectionCredentialsFactory credentialsFactory = new ConfigConnectionCredentialsFactory(new DefaultCoronaConfig(
+                Paths.get("src/test/resources"),
+                "test-config.conf"));
+        paperCredentials = credentialsFactory.create(PAPER);
+        coronaCredentials = credentialsFactory.create(CORONA);
     }
 
     @Test
@@ -29,8 +34,8 @@ public class NativeNettyClientTest {
         NativeNettyServer server = new NativeNettyServer(1, 1);
         NativeNettyClient client = new NativeNettyClient(1);
 
-        server.bind(credentials);
-        client.connect(credentials, 5, 1000L);
+        server.bind(coronaCredentials);
+        client.connect(paperCredentials);
 
         server.shutdown();
         client.shutdown();
@@ -42,22 +47,31 @@ public class NativeNettyClientTest {
         NativeNettyServer server = new NativeNettyServer(1, 1);
         NativeNettyClient client = new NativeNettyClient(1);
 
-        server.bind(credentials);
-        client.connect(credentials, 5, 1000L);
+        server.bind(coronaCredentials);
+        client.connect(paperCredentials);
 
-        AtomicBoolean wrapper = new AtomicBoolean(false);
+        AtomicBoolean clientWrapper = new AtomicBoolean(false);
+        AtomicBoolean serverWrapper = new AtomicBoolean(false);
+
         server.packetHandler().registerHandler(AlertPacket.class, packet -> {
-            assertEquals(1, packet.a);
-            wrapper.set(true);
-            System.out.println(packet.a);
+            System.out.println("ALERT FROM CLIENT! - " + packet.getMessage());
+            clientWrapper.set(true);
         });
-        client.sendPacket(new AlertPacket(1));
+
+        server.packetHandler().registerHandler(AlertPacket.class, packet -> {
+            System.out.println(packet.getMessage());
+            serverWrapper.set(true);
+        });
+
+        client.sendPacket(new AlertPacket("1"));
+        server.sendPacket(new AlertPacket("Hello from CoronaApi!"));
 
         Thread.sleep(200);
 
         server.shutdown();
         client.shutdown();
 
-        assertTrue(wrapper.get());
+        assertTrue(clientWrapper.get());
+        assertTrue(serverWrapper.get());
     }
 }

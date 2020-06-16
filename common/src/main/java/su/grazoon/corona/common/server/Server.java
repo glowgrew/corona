@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class Server {
+public class Server {
 
     @NotNull
     private ServerProfile profile;
@@ -13,8 +13,8 @@ public final class Server {
     private int onlinePlayers, maxPlayers;
 
     public Server(ServerProfile profile, int onlinePlayers, int maxPlayers) {
-        checkArgument(onlinePlayers < 0, "Current server online cannot be lower than 0");
-        checkArgument(maxPlayers < 0, "Maximum server player limit cannot be lower than 0");
+        checkArgument(onlinePlayers >= 0, "Current server online cannot be lower than 0");
+        checkArgument(maxPlayers > 0, "Maximum server player limit cannot be lower than 0");
 
         this.profile = checkNotNull(profile);
         this.onlinePlayers = onlinePlayers;

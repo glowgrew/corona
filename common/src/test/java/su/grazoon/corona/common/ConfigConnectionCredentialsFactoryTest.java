@@ -3,25 +3,26 @@ package su.grazoon.corona.common;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import su.grazoon.corona.api.credentials.ConnectionCredentials;
+import su.grazoon.corona.api.credentials.SenderType;
 import su.grazoon.corona.common.config.DefaultCoronaConfig;
-import su.grazoon.corona.common.credentials.HoconConnectionCredentialsFactory;
+import su.grazoon.corona.common.credentials.ConfigConnectionCredentialsFactory;
 
 import java.nio.file.Paths;
 import java.util.function.Function;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author glowgrew
  */
-class HoconConnectionCredentialsFactoryTest {
+class ConfigConnectionCredentialsFactoryTest {
 
     private static Function<String, ConnectionCredentials> credentialsCreatorStrategy;
 
     @BeforeAll
     static void beforeAll() {
-        credentialsCreatorStrategy = fileName -> new HoconConnectionCredentialsFactory(
-                new DefaultCoronaConfig(Paths.get("src/test/resources"), fileName, false)).create();
+        credentialsCreatorStrategy = fileName -> new ConfigConnectionCredentialsFactory(new DefaultCoronaConfig(Paths.get(
+                "src/test/resources"), fileName)).create(SenderType.VELOCITY);
     }
 
     @Test

@@ -5,5 +5,5 @@ package su.grazoon.corona.api.credentials;
  */
 public interface ConnectionCredentialsFactory {
 
-    ConnectionCredentials create();
+    ConnectionCredentials create(SenderType senderType);
 }

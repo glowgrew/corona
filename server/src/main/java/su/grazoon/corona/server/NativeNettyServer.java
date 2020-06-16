@@ -11,16 +11,18 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import su.grazoon.corona.api.NettyServer;
+import su.grazoon.corona.api.PayloadPacket;
 import su.grazoon.corona.api.PayloadPacketHandler;
 import su.grazoon.corona.api.credentials.ConnectionCredentials;
-import su.grazoon.corona.common.CoronaPacketHandler;
-import su.grazoon.corona.common.PayloadPacketHandlerImpl;
-import su.grazoon.corona.common.packet.AlertPacket;
-import su.grazoon.corona.common.packet.ClientConnectionPacket;
+import su.grazoon.corona.common.CoronaPayloadPacketHandler;
+import su.grazoon.corona.common.packet.HandshakePacket;
 
 public class NativeNettyServer implements NettyServer {
 
     private static final Logger log = LoggerFactory.getLogger(NativeNettyServer.class);
+
+
+    private final ClientRegistry clientRegistry;
 
     private final EventLoopGroup bossGroup, workerGroup;
     private final ServerBootstrap bootstrap;
@@ -29,7 +31,9 @@ public class NativeNettyServer implements NettyServer {
     private ChannelFuture channelFuture;
 
     public NativeNettyServer(int bossThreadsAmount, int workerThreadsAmount) {
-        packetHandler = new PayloadPacketHandlerImpl();
+        clientRegistry = new ClientRegistry();
+
+        packetHandler = new CoronaPayloadPacketHandler();
 
         bossGroup = new NioEventLoopGroup(bossThreadsAmount);
         workerGroup = new NioEventLoopGroup(workerThreadsAmount);
@@ -38,27 +42,30 @@ public class NativeNettyServer implements NettyServer {
         bootstrap.group(bossGroup, workerGroup)
                  .channel(NioServerSocketChannel.class)
                  .option(ChannelOption.SO_BACKLOG, 100)
+                 .option(ChannelOption.SO_REUSEADDR, true)
                  .childHandler(new ChannelInitializer<SocketChannel>() {
                      @Override
                      protected void initChannel(SocketChannel socketChannel) {
                          ChannelPipeline pipeline = socketChannel.pipeline();
                          pipeline.addLast("object_encoder", new ObjectEncoder());
                          pipeline.addLast("object_decoder",
-                                          new ObjectDecoder(
-                                                  ClassResolvers.weakCachingResolver(getClass().getClassLoader())));
-                         pipeline.addLast("server_handler", new CoronaPacketHandler(packetHandler));
+                                          new ObjectDecoder(ClassResolvers.weakCachingResolver(getClass().getClassLoader())));
+                         pipeline.addLast("server_handler",
+                                          new CoronaServerPacketHandler(packetHandler, clientRegistry));
                      }
                  });
 
-        packetHandler.registerHandler(ClientConnectionPacket.class, packet -> log.info("Connected {} client", packet.getType()));
-        packetHandler.registerHandler(AlertPacket.class, alertPacket -> log.info(String.valueOf(alertPacket.a)));
+        packetHandler.registerHandler(HandshakePacket.class,
+                                      packet -> log.info("Connected {} client", packet.getType()));
     }
 
     @Override
     public void bind(ConnectionCredentials credentials) {
         try {
-            channelFuture = bootstrap.bind(credentials.getHostname(), credentials.getPort()).sync();
-            log.info("Corona has started on {}", credentials.getFormattedAddress());
+            channelFuture = bootstrap.bind(credentials.getHostname(), credentials.getPort())
+                                     .addListener(future -> log.info("CoronaApi has started on {}",
+                                                                     credentials.getFormattedAddress()))
+                                     .sync();
         } catch (InterruptedException e) {
             throw new RuntimeException("Thread is interrupted.");
         }
@@ -67,9 +74,11 @@ public class NativeNettyServer implements NettyServer {
     @Override
     public void bindAndLock(ConnectionCredentials credentials) {
         try {
-            channelFuture = bootstrap.bind(credentials.getHostname(), credentials.getPort()).sync();
+            channelFuture = bootstrap.bind(credentials.getHostname(), credentials.getPort())
+                                     .addListener(future -> log.info("CoronaApi has started on {}",
+                                                                     credentials.getFormattedAddress()))
+                                     .sync();
             channelFuture.channel().closeFuture().sync();
-            log.info("[LOCKED] Corona has started on {}", credentials.getFormattedAddress());
         } catch (InterruptedException e) {
             throw new RuntimeException("Thread is interrupted.");
         }
@@ -77,10 +86,19 @@ public class NativeNettyServer implements NettyServer {
 
     @Override
     public void shutdown() {
-        log.info("Corona is going to sleep...");
+        log.info("CoronaApi is going to sleep...");
         log.info("Closing IO threads");
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
+    }
+
+    @Override
+    public void sendPacket(PayloadPacket payloadPacket) {
+        if (payloadPacket == null) {
+            throw new IllegalArgumentException("Packet is null");
+        }
+        clientRegistry.getClients().forEach((senderType, channel) -> channel.writeAndFlush(payloadPacket));
+        log.debug("[CoronaApi => Clients] Sent packet {}", payloadPacket.getClass().getSimpleName());
     }
 
     @Override

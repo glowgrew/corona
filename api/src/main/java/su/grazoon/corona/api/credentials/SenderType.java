@@ -3,15 +3,15 @@ package su.grazoon.corona.api.credentials;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Represents a packet sender type
+ * Represents a packet sender type.
  *
  * @author glowgrew
  */
 public enum SenderType {
 
-    CORONA, // Corona server
-    PAPER, // bukkit client
-    VELOCITY, // proxy client
+    CORONA, // CoronaApi server
+    PAPER, // bukkit client implementation
+    VELOCITY, // proxy client implementation
     UNKNOWN; // not specified
 
     /**

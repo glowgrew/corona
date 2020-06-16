@@ -14,14 +14,14 @@ import su.grazoon.corona.api.NettyClient;
 import su.grazoon.corona.api.PayloadPacket;
 import su.grazoon.corona.api.PayloadPacketHandler;
 import su.grazoon.corona.api.credentials.ConnectionCredentials;
-import su.grazoon.corona.common.CoronaPacketHandler;
-import su.grazoon.corona.common.PayloadPacketHandlerImpl;
-import su.grazoon.corona.common.packet.ClientConnectionPacket;
+import su.grazoon.corona.api.credentials.SenderType;
+import su.grazoon.corona.common.CoronaPayloadPacketHandler;
+import su.grazoon.corona.common.packet.HandshakePacket;
+import su.grazoon.corona.common.server.Server;
+import su.grazoon.corona.common.server.ServerGroup;
+import su.grazoon.corona.common.server.ServerProfile;
 
-import java.io.IOException;
-import java.net.ConnectException;
-
-import static su.grazoon.corona.common.packet.ClientConnectionPacket.Type.UNKNOWN;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class NativeNettyClient implements NettyClient {
 
@@ -34,8 +34,10 @@ public class NativeNettyClient implements NettyClient {
 
     private ChannelFuture channelFuture;
 
+    private SenderType senderType;
+
     public NativeNettyClient(int threadAmount) {
-        packetHandler = new PayloadPacketHandlerImpl();
+        packetHandler = new CoronaPayloadPacketHandler();
 
         eventExecutors = new NioEventLoopGroup(threadAmount);
 
@@ -48,38 +50,45 @@ public class NativeNettyClient implements NettyClient {
                      protected void initChannel(SocketChannel socketChannel) {
                          ChannelPipeline channelPipeline = socketChannel.pipeline();
                          channelPipeline.addLast("object_encoder", new ObjectEncoder());
-                         channelPipeline.addLast("object_decoder", new ObjectDecoder(
-                                 ClassResolvers.weakCachingResolver(getClass().getClassLoader())));
-                         channelPipeline.addLast("client_handler", new CoronaPacketHandler(packetHandler));
+                         channelPipeline.addLast("object_decoder",
+                                                 new ObjectDecoder(ClassResolvers.weakCachingResolver(getClass().getClassLoader())));
+                         channelPipeline.addLast("client_handler", new CoronaClientPacketHandler(packetHandler));
                      }
                  });
+
+        senderType = SenderType.UNKNOWN;
     }
 
-    public void connect(ConnectionCredentials credentials) throws IOException {
+    @Override
+    public void connect(ConnectionCredentials credentials) {
         channelFuture = bootstrap.connect(credentials.getHostname(), credentials.getPort());
         try {
             channelFuture.sync();
             log.info("Connected to Corona ({})", credentials.getFormattedAddress());
-            sendPacket(new ClientConnectionPacket(UNKNOWN));
+            senderType = credentials.getSenderType();
+            ServerProfile profile = new ServerProfile(ServerGroup.guessOf(credentials.getServer()),
+                                                      credentials.getServer());
+            sendPacket(new HandshakePacket(senderType, new Server(profile, 0, 100)));
         } catch (InterruptedException e) {
-            throw new RuntimeException("Thread was interrupted.");
+            throw new RuntimeException("Thread was interrupted");
         }
         if (!channelFuture.isSuccess()) {
-            throw new ConnectException(channelFuture.cause().getMessage());
+            log.error("IO operation wasn't completed successfully: {}", channelFuture.cause().getMessage());
         }
     }
 
+    @Override
     public void shutdown() {
+        log.info("Closing IO threads");
         eventExecutors.shutdownGracefully();
     }
 
     @Override
-    public void sendPacket(PayloadPacket payloadPacket) {
-        if (payloadPacket == null) {
-            throw new IllegalArgumentException("Packet is null");
-        }
-        channelFuture.channel().writeAndFlush(payloadPacket);
-        log.debug("Sent packet {}", payloadPacket.getClass().getSimpleName());
+    public ChannelFuture sendPacket(PayloadPacket payloadPacket) {
+        checkNotNull(payloadPacket, "packet");
+
+        log.debug("[{} => Corona] Sent packet {}", senderType.display(), payloadPacket.getClass().getSimpleName());
+        return channelFuture.channel().writeAndFlush(payloadPacket);
     }
 
     @Override

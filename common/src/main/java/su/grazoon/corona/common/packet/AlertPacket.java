@@ -8,23 +8,30 @@ import su.grazoon.corona.common.CoronaPacketBuffer;
  */
 public class AlertPacket extends ClientPayloadPacket {
 
-    public int a;
+    private String message;
 
-    public AlertPacket(int a) {
-        this.a = a;
+    public AlertPacket(String message) {
+        this.message = message;
     }
 
     public AlertPacket() {
-
     }
 
     @Override
     protected void write0(CoronaPacketBuffer buffer) {
-        buffer.writeVarInt(a);
+        buffer.writeString(message);
     }
 
     @Override
     protected void read0(CoronaPacketBuffer buffer) {
-        buffer.readVarInt();
+        message = buffer.readString(32767);
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

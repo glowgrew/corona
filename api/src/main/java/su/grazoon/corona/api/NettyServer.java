@@ -10,5 +10,7 @@ public interface NettyServer {
 
     void shutdown();
 
+    void sendPacket(PayloadPacket payloadPacket);
+
     PayloadPacketHandler packetHandler();
 }

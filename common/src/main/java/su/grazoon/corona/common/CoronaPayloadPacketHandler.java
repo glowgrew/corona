@@ -12,13 +12,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
 
-public class PayloadPacketHandlerImpl implements PayloadPacketHandler {
+public class CoronaPayloadPacketHandler implements PayloadPacketHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(PayloadPacketHandlerImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(CoronaPayloadPacketHandler.class);
 
     private final Multimap<Class<? extends PayloadPacket>, Consumer<Object>> packetHandlers;
 
-    public PayloadPacketHandlerImpl() {
+    public CoronaPayloadPacketHandler() {
         this.packetHandlers = Multimaps.newMultimap(new HashMap<>(), HashSet::new);
     }
 

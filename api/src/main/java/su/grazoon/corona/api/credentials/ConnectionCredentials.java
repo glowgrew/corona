@@ -3,7 +3,7 @@ package su.grazoon.corona.api.credentials;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents a connection data used by client or server
+ * Represents a connection data used by client or server.
  *
  * @author glowgrew
  */

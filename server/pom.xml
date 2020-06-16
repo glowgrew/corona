@@ -40,7 +40,7 @@
                     <archive>
                         <addMavenDescriptor>false</addMavenDescriptor>
                         <manifestEntries>
-                            <Main-Class>su.grazoon.corona.server.Bootstrap</Main-Class>
+                            <Main-Class>su.grazoon.coronaApi.server.Bootstrap</Main-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>

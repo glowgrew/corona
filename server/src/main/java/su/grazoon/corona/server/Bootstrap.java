@@ -10,8 +10,9 @@ import org.slf4j.LoggerFactory;
 import su.grazoon.corona.api.NettyServer;
 import su.grazoon.corona.api.config.CoronaConfig;
 import su.grazoon.corona.api.credentials.ConnectionCredentialsFactory;
+import su.grazoon.corona.api.credentials.SenderType;
 import su.grazoon.corona.common.config.DefaultCoronaConfig;
-import su.grazoon.corona.common.credentials.HoconConnectionCredentialsFactory;
+import su.grazoon.corona.common.credentials.ConfigConnectionCredentialsFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -24,12 +25,15 @@ public class Bootstrap {
     private static final Logger log = LoggerFactory.getLogger(Bootstrap.class);
 
     public static void main(String[] args) throws IOException {
-        NettyServer server = new NativeNettyServer(2, 4);
-        CoronaConfig config = new DefaultCoronaConfig(Paths.get("data"), "config.conf", true);
-        ConnectionCredentialsFactory credentialsFactory = new HoconConnectionCredentialsFactory(config);
-        server.bind(credentialsFactory.create());
+        System.setProperty("io.netty.leakDetectionLevel", "advanced");
 
-        log.info("Welcome to Corona console! Write 'shutdown' to stop Corona");
+        CoronaConfig config = new DefaultCoronaConfig(Paths.get("data"), "config.conf");
+        NettyServer server = new NativeNettyServer(config.getInt("boss-thread-amount", 2),
+                                                   config.getInt("worker-thread-amount", 4));
+        ConnectionCredentialsFactory credentialsFactory = new ConfigConnectionCredentialsFactory(config);
+        server.bind(credentialsFactory.create(SenderType.CORONA));
+
+        log.info("Welcome to CoronaApi console! Write 'shutdown' to stop CoronaApi");
         log.info("and to close all active connections.");
         Terminal terminal = TerminalBuilder.builder().dumb(true).jna(false).build();
         LineReader lineReader = LineReaderBuilder.builder().terminal(terminal).build();

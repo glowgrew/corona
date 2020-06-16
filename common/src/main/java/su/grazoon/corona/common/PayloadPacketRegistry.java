@@ -2,6 +2,7 @@ package su.grazoon.corona.common;
 
 import su.grazoon.corona.api.PayloadPacket;
 import su.grazoon.corona.common.packet.AlertPacket;
+import su.grazoon.corona.common.packet.HandshakePacket;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -19,7 +20,8 @@ public class PayloadPacketRegistry {
         this.registeredPackets = new PacketData[255];
         this.packetDataByType = new HashMap<>();
 
-        registerPacket(1, AlertPacket::new);
+        registerPacket(1, HandshakePacket::new);
+        registerPacket(2, AlertPacket::new);
     }
 
     public void registerPacket(int id, Supplier<PayloadPacket> creator) {
