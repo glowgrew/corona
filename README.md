@@ -1,2 +1,2 @@
 # Corona
-A Netty-powered core for Grazoon
+The simplest implementation of a data server powered by Netty.
